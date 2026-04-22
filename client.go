@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -403,11 +402,3 @@ func (c *Client) debugf(format string, args ...any) {
 	fmt.Fprintf(stderrWriter, "[allstak] "+format+"\n", args...)
 }
 
-// debugWriter exposes the debug sink for integrations that want to mirror
-// their own diagnostic output to the same stream when Debug is on.
-func (c *Client) debugWriter() io.Writer {
-	if c.cfg.Debug {
-		return stderrWriter
-	}
-	return io.Discard
-}
