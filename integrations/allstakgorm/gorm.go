@@ -16,7 +16,7 @@ package allstakgorm
 import (
 	"time"
 
-	allstak "github.com/allstak/allstak-go"
+	allstak "github.com/allstak-io/allstak-go"
 	"gorm.io/gorm"
 )
 

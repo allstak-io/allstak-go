@@ -23,7 +23,7 @@ import (
 	"context"
 	"time"
 
-	allstak "github.com/allstak/allstak-go"
+	allstak "github.com/allstak-io/allstak-go"
 )
 
 // JobFunc is the customer-supplied work function. It receives a context
