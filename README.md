@@ -315,7 +315,7 @@ user info is visible to the outer panic handler.
 
 **Nothing appears in the dashboard**
 
-1. Verify the API key: `curl -H "X-AllStak-Key: ask_..." https://ingest.allstak.dev/healthz`
+1. Verify the API key: `curl -H "X-AllStak-Key: ask_..." https://api.allstak.sa/healthz`
 2. Enable debug mode: `Debug: true` in `Config` — you'll see transport
    attempts, retries, and failures on stderr.
 3. Confirm the project: the API key is project-scoped, so events land in

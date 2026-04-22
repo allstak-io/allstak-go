@@ -10,7 +10,7 @@ import (
 // know this value — the SDK defaults to it and never exposes a Host knob on
 // Config. For self-hosted or local-dev use, set ALLSTAK_HOST in the
 // environment; tests may inject a transport directly via NewWithTransport.
-const INGEST_HOST = "https://ingest.allstak.dev"
+const INGEST_HOST = "https://api.allstak.sa"
 
 // envHostOverride lets local validation and tests target a different host
 // (e.g. http://localhost:8080) without leaking a Host field into the public
