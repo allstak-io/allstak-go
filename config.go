@@ -58,6 +58,73 @@ type Config struct {
 	// RequestTimeout is the per-request timeout for each ingest call.
 	// Defaults to 5s.
 	RequestTimeout time.Duration
+
+	// Dist is the optional build distribution tag (e.g. "linux-amd64").
+	// Used to disambiguate multi-arch / multi-platform builds within one
+	// release. Optional.
+	Dist string
+
+	// CommitSha is the git commit SHA the running binary was built from.
+	// Auto-detected from $GIT_COMMIT / $VERCEL_GIT_COMMIT_SHA / $RAILWAY_GIT_COMMIT_SHA
+	// when unset. Optional.
+	CommitSha string
+
+	// Branch is the git branch the running binary was built from.
+	// Auto-detected from $GIT_BRANCH / $VERCEL_GIT_COMMIT_REF when unset.
+	// Optional.
+	Branch string
+
+	// Platform identifies the runtime — defaults to "go". Override only
+	// when embedding the SDK in a hybrid runtime (e.g. cgo binding).
+	Platform string
+
+	// SDKName / SDKVersion are sent on the wire as sdk.name / sdk.version.
+	// Defaulted from the package constants below; override only for tests.
+	SDKName    string
+	SDKVersion string
+}
+
+// SDK identity sent on the wire as `sdk.name` / `sdk.version`.
+const (
+	SDKName    = "allstak-go"
+	SDKVersion = "1.2.0"
+)
+
+// envFirstNonEmpty returns the first non-empty value of the listed env vars,
+// or "". Used for release-metadata auto-detection.
+func envFirstNonEmpty(keys ...string) string {
+	for _, k := range keys {
+		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// ReleaseTags returns the release-metadata key/value pairs the SDK attaches
+// to every event's `metadata` map. Backend reads these as first-class fields
+// once dedicated columns land; in the meantime they ride inside metadata.
+func (c Config) ReleaseTags() map[string]string {
+	out := map[string]string{}
+	if c.SDKName != "" {
+		out["sdk.name"] = c.SDKName
+	}
+	if c.SDKVersion != "" {
+		out["sdk.version"] = c.SDKVersion
+	}
+	if c.Platform != "" {
+		out["platform"] = c.Platform
+	}
+	if c.Dist != "" {
+		out["dist"] = c.Dist
+	}
+	if c.CommitSha != "" {
+		out["commit.sha"] = c.CommitSha
+	}
+	if c.Branch != "" {
+		out["commit.branch"] = c.Branch
+	}
+	return out
 }
 
 // applyDefaults fills unset fields with sane defaults and returns a copy.
@@ -88,6 +155,25 @@ func (c Config) applyDefaults() Config {
 	}
 	if c.RequestTimeout <= 0 {
 		c.RequestTimeout = 5 * time.Second
+	}
+	// Release-tracking auto-detection. Explicit values always win.
+	if c.Platform == "" {
+		c.Platform = "go"
+	}
+	if c.SDKName == "" {
+		c.SDKName = SDKName
+	}
+	if c.SDKVersion == "" {
+		c.SDKVersion = SDKVersion
+	}
+	if c.Release == "" {
+		c.Release = envFirstNonEmpty("ALLSTAK_RELEASE", "VERCEL_GIT_COMMIT_SHA", "RAILWAY_GIT_COMMIT_SHA", "RENDER_GIT_COMMIT")
+	}
+	if c.CommitSha == "" {
+		c.CommitSha = envFirstNonEmpty("ALLSTAK_COMMIT_SHA", "GIT_COMMIT", "VERCEL_GIT_COMMIT_SHA", "RAILWAY_GIT_COMMIT_SHA", "RENDER_GIT_COMMIT")
+	}
+	if c.Branch == "" {
+		c.Branch = envFirstNonEmpty("ALLSTAK_BRANCH", "GIT_BRANCH", "VERCEL_GIT_COMMIT_REF", "RAILWAY_GIT_BRANCH")
 	}
 	return c
 }

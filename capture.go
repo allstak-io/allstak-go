@@ -25,6 +25,7 @@ func (c *Client) CaptureException(ctx context.Context, err error) {
 		ExceptionClass: exceptionClassOf(err),
 		Message:        unwrapMessage(err),
 		StackTrace:     captureStack(1),
+		Frames:         captureStructuredFrames(1),
 		Level:          "error",
 	}
 	c.enrichFromContext(ctx, &p)
@@ -42,6 +43,7 @@ func (c *Client) CaptureExceptionWithLevel(ctx context.Context, err error, level
 		ExceptionClass: exceptionClassOf(err),
 		Message:        unwrapMessage(err),
 		StackTrace:     captureStack(1),
+		Frames:         captureStructuredFrames(1),
 		Level:          level,
 	}
 	c.enrichFromContext(ctx, &p)

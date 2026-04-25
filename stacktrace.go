@@ -58,6 +58,50 @@ func formatFrame(f runtime.Frame) string {
 	return fmt.Sprintf("%s:%d %s", f.File, f.Line, f.Function)
 }
 
+// captureStructuredFrames returns Phase 2 v2 ingest frames alongside the
+// v1 string list. Same skip semantics as captureStack.
+func captureStructuredFrames(skip int) []Frame {
+	pcs := make([]uintptr, maxStackDepth+8)
+	n := runtime.Callers(2+skip, pcs)
+	if n == 0 {
+		return nil
+	}
+	frames := runtime.CallersFrames(pcs[:n])
+	out := make([]Frame, 0, n)
+	for {
+		f, more := frames.Next()
+		if !isSDKFrame(f.Function) {
+			out = append(out, Frame{
+				Filename: f.File,
+				AbsPath:  f.File,
+				Function: f.Function,
+				Lineno:   f.Line,
+				InApp:    isInAppFrame(f.Function, f.File),
+				Platform: "go",
+			})
+		}
+		if !more || len(out) >= maxStackDepth {
+			break
+		}
+	}
+	return out
+}
+
+// isInAppFrame heuristic — Go's stdlib + vendored deps live under
+// /usr/local/go/ or /go/pkg/mod/, customer code does not.
+func isInAppFrame(function, file string) bool {
+	if file == "" {
+		return true
+	}
+	if strings.Contains(file, "/go/pkg/mod/") || strings.Contains(file, "/go/src/") {
+		return false
+	}
+	if strings.HasPrefix(function, "runtime.") || strings.HasPrefix(function, "reflect.") {
+		return false
+	}
+	return true
+}
+
 // exceptionClassOf tries to produce a stable "class name" for an error,
 // mirroring the way other SDKs report `ExceptionClass` to the backend.
 // For a plain errors.New, this returns "*errors.errorString"; for a user

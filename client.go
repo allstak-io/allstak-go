@@ -169,6 +169,27 @@ func (c *Client) Stats() Stats {
 	}
 }
 
+// mergeReleaseTags returns a metadata map that contains all release-tracking
+// tags (sdk.name/version, platform, dist, commit.sha/branch) plus any caller-
+// supplied entries. Caller values win on key collision.
+//
+// We always allocate a fresh map when there are tags to merge so the caller's
+// original metadata can never be mutated under their feet (important when the
+// same payload struct is reused across goroutines).
+func mergeReleaseTags(callerMeta map[string]any, tags map[string]string) map[string]any {
+	if len(tags) == 0 {
+		return callerMeta
+	}
+	out := make(map[string]any, len(tags)+len(callerMeta))
+	for k, v := range tags {
+		out[k] = v
+	}
+	for k, v := range callerMeta {
+		out[k] = v
+	}
+	return out
+}
+
 // ── Send paths (public capture API) ───────────────────────────────────────
 
 // CaptureError enqueues an error payload. Safe to call from any goroutine.
@@ -189,6 +210,9 @@ func (c *Client) CaptureError(p ErrorPayload) {
 	if p.Release == "" {
 		p.Release = c.cfg.Release
 	}
+	// Merge release-tracking tags (sdk.name/version, platform, dist,
+	// commit.sha/branch) into Metadata. Caller-supplied metadata wins.
+	p.Metadata = mergeReleaseTags(p.Metadata, c.cfg.ReleaseTags())
 
 	select {
 	case c.errs <- &p:
@@ -218,6 +242,7 @@ func (c *Client) CaptureLog(p LogPayload) {
 	if p.Service == "" {
 		p.Service = c.cfg.ServiceName
 	}
+	p.Metadata = mergeReleaseTags(p.Metadata, c.cfg.ReleaseTags())
 
 	select {
 	case c.logs <- &p:
@@ -249,6 +274,7 @@ func (c *Client) CaptureHTTPRequest(p HTTPRequestItem) {
 	if p.Timestamp == "" {
 		p.Timestamp = time.Now().UTC().Format(time.RFC3339Nano)
 	}
+	p.Metadata = mergeReleaseTags(p.Metadata, c.cfg.ReleaseTags())
 
 	select {
 	case c.requests <- &p:

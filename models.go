@@ -21,6 +21,25 @@ type ErrorPayload struct {
 	TraceID        string         `json:"traceId,omitempty"`
 	RequestContext *ReqContext    `json:"requestContext,omitempty"`
 	Breadcrumbs    []Breadcrumb   `json:"breadcrumbs,omitempty"`
+	// Phase 2 — v2 ingest contract.
+	SDKName     string  `json:"sdkName,omitempty"`
+	SDKVersion  string  `json:"sdkVersion,omitempty"`
+	Platform    string  `json:"platform,omitempty"`
+	Dist        string  `json:"dist,omitempty"`
+	Frames      []Frame `json:"frames,omitempty"`
+}
+
+// Frame mirrors the backend ErrorIngestRequest.Frame. Populated from
+// runtime.CallersFrames so the dashboard can show structured call sites.
+type Frame struct {
+	Filename string `json:"filename,omitempty"`
+	AbsPath  string `json:"absPath,omitempty"`
+	Function string `json:"function,omitempty"`
+	Lineno   int    `json:"lineno,omitempty"`
+	Colno    int    `json:"colno,omitempty"`
+	InApp    bool   `json:"inApp,omitempty"`
+	Platform string `json:"platform,omitempty"`
+	DebugID  string `json:"debugId,omitempty"`
 }
 
 // UserContext identifies the authenticated user associated with an event.
@@ -96,6 +115,9 @@ type HTTPRequestItem struct {
 	ResponseBody     string `json:"responseBody,omitempty"`
 	Environment      string `json:"environment,omitempty"`
 	Release          string `json:"release,omitempty"`
+	// Release-tracking metadata. Backend stores the rest inside metadata
+	// today; once dedicated columns land, the ingester reads them out.
+	Metadata         map[string]any `json:"metadata,omitempty"`
 }
 
 // ── Database queries ──────────────────────────────────────────────────────

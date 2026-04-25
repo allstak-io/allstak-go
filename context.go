@@ -207,6 +207,25 @@ func (c *Client) enrichFromContext(ctx context.Context, p *ErrorPayload) {
 		}
 		p.Metadata["service"] = c.cfg.ServiceName
 	}
+	// Phase 2 — v2 ingest contract.
+	if p.SDKName == "" {
+		p.SDKName = "allstak-go"
+	}
+	if p.SDKVersion == "" {
+		p.SDKVersion = sdkVersion
+	}
+	if p.Platform == "" {
+		p.Platform = "go"
+	}
+	if p.Release == "" {
+		p.Release = c.cfg.Release
+	}
+	if p.Environment == "" {
+		p.Environment = c.cfg.Environment
+	}
+	if p.Dist == "" {
+		p.Dist = c.cfg.Dist
+	}
 }
 
 // ── ID generation ─────────────────────────────────────────────────────────
