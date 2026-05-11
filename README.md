@@ -25,18 +25,6 @@ View captured events live at [app.allstak.sa](https://app.allstak.sa).
 - Cron heartbeats via `SendHeartbeat`
 - Per-stream worker goroutines — no head-of-line blocking
 
-## What You Get
-
-Once integrated, every event flows to your AllStak dashboard:
-
-- **Errors** — stack traces, error chains, release + environment tags
-- **Logs** — structured logs with search and filters
-- **HTTP** — inbound and outbound request timing, status codes, failed calls
-- **Database** — `database/sql` query capture with statement normalization
-- **Traces** — distributed spans with context propagation
-- **Cron monitors** — scheduled job success/failure tracking
-- **Alerts** — email and webhook notifications on regressions
-
 ## Installation
 
 ```bash
@@ -134,6 +122,21 @@ Production endpoint: `https://api.allstak.sa`. Override via `ALLSTAK_HOST`:
 ```bash
 export ALLSTAK_HOST=https://allstak.mycorp.com
 ```
+
+## Fail-Open Reliability
+
+AllStak telemetry is best-effort. Runtime capture APIs enqueue into bounded
+background workers and drop old telemetry under pressure rather than blocking
+the host process. If AllStak is down, slow, rate-limiting, or under
+maintenance, customer requests continue normally.
+
+- Capture APIs are non-blocking and use bounded queues.
+- Inbound HTTP middleware records telemetry without waiting on AllStak ingest.
+- `SendHeartbeat`, `Flush`, and `Close` are bounded. If the caller passes a
+  context without a deadline, heartbeat uses an internal deadline derived from
+  `RequestTimeout`.
+- DNS, connection, timeout, 429, 500, and 503 failure modes are covered by
+  automated fail-open tests.
 
 ## Links
 
